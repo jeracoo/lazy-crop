@@ -1,0 +1,56 @@
+from PIL import Image
+import os
+
+# Define the source and destination directories
+source_dir = 'D:\\Google Drive\\Art\\Wrenny moo\\Ripper\\background_removed'
+dest_dir = 'D:\\Google Drive\\Art\\Wrenny moo\\Ripper\\aligned_images'
+
+# Create the destination directory if it does not exist
+if not os.path.exists(dest_dir):
+    os.makedirs(dest_dir)
+
+# Function to align and crop the image around the rectangle
+def align_and_crop(image):
+    # Get the bounding box of the non-transparent part of the image
+    bbox = image.getbbox()
+    if bbox:
+        # Calculate the center of the rectangle
+        rect_center_x = bbox[0] + (bbox[2] - bbox[0]) // 2
+        rect_center_y = bbox[1] + (bbox[3] - bbox[1]) // 2
+
+        # Calculate the center of the image
+        image_center_x = image.width // 2
+        image_center_y = image.height // 2
+
+        # Calculate the shift required to align the rectangle with the image center
+        shift_x = image_center_x - rect_center_x
+        shift_y = image_center_y - rect_center_y
+
+        # Create a new blank image with the same size and mode
+        new_image = Image.new(image.mode, image.size)
+
+        # Paste the original image into the new image, shifted to align the rectangle
+        new_image.paste(image, (shift_x, shift_y))
+
+        # Now that the rectangle is centered, crop the image
+        left = (new_image.width - bbox[2] + bbox[0]) // 2
+        top = (new_image.height - bbox[3] + bbox[1]) // 2
+        right = left + bbox[2] - bbox[0]
+        bottom = top + bbox[3] - bbox[1]
+        cropped_image = new_image.crop((left, top, right, bottom))
+
+        return cropped_image
+    else:
+        return image  # Return original image if no non-transparent part is found
+
+# Process each image in the source directory
+for filename in os.listdir(source_dir):
+    if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+        image_path = os.path.join(source_dir, filename)
+        with Image.open(image_path) as img:
+            aligned_img = align_and_crop(img)
+            # Save the aligned and cropped image in PNG format
+            new_filename = os.path.splitext(filename)[0] + '.png'  # Change file extension to .png
+            aligned_img.save(os.path.join(dest_dir, new_filename))
+
+print("Image processing completed.")
